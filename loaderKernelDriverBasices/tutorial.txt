@@ -1,0 +1,15 @@
+use "sudo tail -f /var/log/syslog" to display the 10 last line in the syslog file, this file will display all the prints you made in your module
+use "sudo insmod <moduleName.ko>" to insert module to the kernel
+use "sudo rmmod <moduleName>" to remove module from the kernel
+use "lsmod" to list all running modules in the kernel
+(Note: they are other method to insert and remove module, is to use "modprobe" but you need to build your module in the module directory /lib/modules/$(uname -r) because it will search for it there)
+
+in Makefile
+
+obj-m is the object module you want to build.
+'-C <directory-path>' is to tell to look in the <directory-path> before you build the module, that directory is our kernel build module library that contains all header we need to include to our module.
+"M=<path" is the build location. 
+
+target modules is to build the module inside the current directory
+target modules_install is to create a compiled binary and install it to the kernel directory (/lib/module or /lib/module/$(uname -r))
+target clean is to clean up the builded project

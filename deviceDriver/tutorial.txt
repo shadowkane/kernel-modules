@@ -1,0 +1,28 @@
+in linux all devices are just files or directories that are located in "/dev" directory.
+they are 2 types of device:
+	character device: it transfer data from and to user appication, instantly read or write the byte data in a character-to-character steam without using a specific device address. it's like reading from camera or writing to an audio device or both in serial communication or I/O device etc... 
+	block device : it act just like a regular file, read, write, go back and go further(like watching a video you can pass or back or just play it)
+each device is located in "/dev" directory and if you use the "ls -l" you can the long format of each driver.
+(exp:
+ 	crw-rw---T 1 root i2c      89,   0 Jan  1  2000 i2c-0
+ 	brw-rw---T 1 root disk      1,   0 Mar  1 20:46 ram0
+
+i2c-0 and ram0 are both devices. i2c-0 it's a character device (has "c" in "crw-rw---T") but ram0 is a block device (has "b" at the first column)).
+
+device driver major/minor:
+usng the previous example, (89, 0) in i2c-0 and (1, 0) in ram0 represent the major and minor numbers.
+the major number is the driver id that driver will use. that's how the kernel can identify the right driver of each connected device. that's why we can find many devices have the same major number because they use the same device driver. and the major number is the offset of the driver into the kernel's drivers table.they are 256 major number [0-255].
+the minor number is used by the driver only to differentiate between each device uses the same driver.(as i understand it like the id of each device in the driver)
+
+file_operations data struction, which is defined in the "/linux/fs.h" (/lib/modules/$(uname -r)/build/include/linux/fs.h), holds pointers to functions within the driver to allow you to define some sort of behavior you want to add. for example you can add the read and write and open and close behavior by defining those fonctions.see the linux/fs.h file to see all function you can define.if you didn't provide an implimentation of any of the function in linux/fs.h they will take null.
+
+so to create a driver we need two importants things to define:
+	define the right device driver major, it means we need to set a major number that not exist, we need to use a dynamic allocatio for it. because if in our system we could provide an unused number, maybe in other system that number is already in use.
+	second thing, we need to provide the file_operations data struction, by implimenting all necesserlly functions.
+
+/dev will contain all devices pluged to the system,files and directories in the /dev are created just after the boot.
+to check if your driver works you can create a new node (add a device in /dev) using "sudo mknod -m 666 /dev/<nodeName> c 240 0", c for character device and 2400 is the major number (id of the driver) and 0 is the minor number (id of this device inside the driver) and 666 are the permissions.
+and because this node is a file we can open, read, wirte and close this file, each operation will trigger the file_operations function we implimented in the driver.
+to see if your driver is exist you can use "cat /proc/devices | grep <driverName>, the driver name is not the module name that you create(moduleName.c) it's the name you choose inside the code itself and passed as argument to the register_chrdev() function.
+"/proc/devices" is also created after the boot, to load all drivers the kernel need.(i'm not very sure about this it nether about if "/proc" directory all created afer boot)
+
