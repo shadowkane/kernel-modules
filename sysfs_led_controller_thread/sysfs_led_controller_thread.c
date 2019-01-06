@@ -203,7 +203,7 @@ static int mainThread(void *arg)
 		if(oldMode != mode){
 			// if the old mode was blink and now it changed, we need to stop the previouse thread we launched (blink thread)
 			if(oldMode == BLINK){
-				if(!IS_ERR(blinkThread)){
+				if(!IS_ERR(blinkThread_p)){
 					kthread_stop(blinkThread_p);
 				}
 			}
@@ -255,7 +255,7 @@ static int mainThread(void *arg)
 		free_irq(irqNumber, NULL);
 	}
 	if(oldMode == BLINK){
-		if(!IS_ERR(blinkThread)){
+		if(!IS_ERR(blinkThread_p)){
 			kthread_stop(blinkThread_p);
 		}
 	}
