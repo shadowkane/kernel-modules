@@ -1,0 +1,45 @@
+sudo cat /sys/kernel/debug/usb/devices
+or
+sudo cat /proc/bus/input/devices
+or
+usb-devices
+display all attached devices includes their information (vendor, prodId, bus, port, etc...)
+
+lsusb
+display devices information in short way.
+
+/sys/bus/usb/drivers/: list of usb driver (for usbhid, usb, usb-storage etc), when you create a new driver using struct usb_driver it will be created in this folder.
+/sys/bus/usb/devices/: list of usb devices (ex, 1-1.3:1.0n 1 is the bus number, 1.3 is the hub number, 1is the 
+sudo nano /sys/bus/usb/drivers/usbhid/{new_id or remove_id} to add device to driver by it's vendor prodId
+
+udevadm monitor
+launch the udev
+
+udevadm infro -a /sys/bus/usb/devices/<usb id>
+show all information about that device plugged in that usb port
+
+sudo udevadm control --reload-rules
+reload all rules in udev
+
+sudo nano /etc/udev/rules.d/99-<your rule name>.rules
+you add this file to add new rules to the udev. udev will not tell which device use which driver but it will control the driver itself
+
+inside /etc/modprobe.d/blacklist.conf write "blacklist <module name>" this will stop a module from autoloading, if you want to stop usbhid from autoloading so your driver can bind with your hid device, you can block usbhid module if you will not use it.
+remarque: sometime the usbhid is not loaded as a kernel module, in that cas it will be the the kernel as a driver and you won't be able to block him, so use need to unbind the device or remove it's id (vendor/product id) or recompile your kernel with the option CONFIG_USB_HID=n so it will disable the entire usbhid.
+
+how to bind/unbind device from driver:
+to be able to bind a driver with a device, you need to make sure that device isn't controller (bound) by any other driver and in order to know that, check the driver symbolink in device directory that locats in /sys/bus/usb/devices/.
+cmd to show the driver symbolink of the device: tree /sys/bus/usb/devices/<usb id>, the <usb id> is the directory where the device plugged in, it will be created just after plugging in the device to the usb port.
+to unbind a device from a driver, there a file called unbind in the driver directory, pass to it the <usb id>.
+cmd to unbind: echo -n <usb id> > /sys/bus/usb/drivers/<driver>.
+now you can bind your driver to that device by passing the same <usb id> to the bind file in your driver directory.
+cmd to bind: echo -n <usb id> > /sys/bus/usb/drivers/<your driver>
+
+automatic method to bind your driver to your device:
+normally the system will do that automatically, based on the class type in the discreption of the device (HID, CDC_NCM ...), the kernel will try to bind the right driver for the devicer, if nothing was found, it will try to bind the device to your driver if it matches the vendor id and product id. but if you want to bind the device to another driver automatically you can use this methode below:
+using udem rules: create new rule in "/etc/udev/rules.d" that unbind the device that has a specific vendor id and product id  when its plugged in by passed the device subsystem name (usb id) to the unbind file in (/sys/bus/usb/drivers/<the drive using that device>/)
+example: SUBSYSTEM=="usb", ATTRS{idVendor}=="0079", ATTRS{idProduct}=="0006", RUN="/bin/sh -c 'if [ -d /sys/bus/usb/drivers/usbhid/$id:1.0 ]; then echo -n $id:1.0 > /sys/bus/usb/drivers/usbhid/unbind; fi && echo -n $id:1.0 > /sys/bus/usb/drivers/joystick_driver/bind'"
+
+
+references:
+all about usb: https://www.oreilly.com/library/view/linux-device-drivers/0596005903/ch13.html
